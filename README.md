@@ -1,4 +1,4 @@
-# Container Test Tool
+# poDTest
 
 container-test-tool is a Rust-based CLI utility for building and testing Docker images in CI/CD pipelines. It automates the process of building a Docker image, running a container, performing health checks, and cleaning up resources. With configurable flags, it supports custom Dockerfiles, health check endpoints, and urgent deployment scenarios via a hot-fix mode. Designed for integration as a GitHub Action, this tool ensures reliable Docker image validation for your projects.
 
