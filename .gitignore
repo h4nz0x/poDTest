@@ -1,0 +1,38 @@
+# Rust build artifacts
+target/
+Cargo.lock
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Environment and sensitive files
+.env
+.env.local
+*.key
+*.pem
+*.secret
+
+# Python cache (if Python scripts are used locally)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Docker-related (if not part of the repo)
+*.dockerignore
+docker-compose.yml
+docker-compose.yaml
+
+# Rust-specific temporary files
+*.rs.bk
+
+script.txt
