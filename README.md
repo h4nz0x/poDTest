@@ -1,6 +1,6 @@
 # poDTest
 
-container-test-tool is a Rust-based CLI utility for building and testing Docker images in CI/CD pipelines. It automates the process of building a Docker image, running a container, performing health checks, and cleaning up resources. With configurable flags, it supports custom Dockerfiles, health check endpoints, and urgent deployment scenarios via a hot-fix mode. Designed for integration as a GitHub Action, this tool ensures reliable Docker image validation for your projects.
+poDTest is a Rust-based CLI utility for building and testing Docker images in CI/CD pipelines. It automates the process of building a Docker image, running a container, performing health checks, and cleaning up resources. With configurable flags, it supports custom Dockerfiles, health check endpoints, and urgent deployment scenarios via a hot-fix mode. Designed for integration as a GitHub Action, this tool ensures reliable Docker image validation for your projects.
 
 ## Features
 
@@ -25,8 +25,8 @@ container-test-tool is a Rust-based CLI utility for building and testing Docker 
 
 ### Clone the Repository:
 ```bash
-git clone https://github.com/your-username/container-test-tool.git
-cd container-test-tool
+git clone https://github.com/h4nz0x/poDTest.git
+cd poDTest
 ```
 
 ### Build the Tool:
@@ -34,18 +34,18 @@ cd container-test-tool
 cargo build --release
 ```
 
-The binary will be located at `target/release/container-test-tool`.
+The binary will be located at `target/release/poDTest`.
 
 ### Verify Installation:
 ```bash
-./target/release/container-test-tool --help
+./target/release/poDTest --help
 ```
 
 This displays available flags and their descriptions.
 
 ## Usage
 
-Run the tool with `cargo run --release -- [flags]` or use the compiled binary (`./target/release/container-test-tool [flags]`). Below are the supported flags:
+Run the tool with `cargo run --release -- [flags]` or use the compiled binary (`./target/release/poDTest [flags]`). Below are the supported flags:
 
 | Flag | Description | Default |
 |------|-------------|---------|
@@ -101,7 +101,7 @@ jobs:
       - name: Build container-test-tool
         run: cargo build --release
       - name: Test Docker Image
-        run: ./target/release/container-test-tool --dockerfile-path Dockerfile --port 8000 --health-check-path /health
+        run: ./target/release/poDTest --dockerfile-path Dockerfile --port 8000 --health-check-path /health
 ```
 
 **Stay tuned for the official GitHub Action release on the GitHub Marketplace!**
