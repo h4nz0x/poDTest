@@ -3,10 +3,10 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use std::path::Path;
 use std::process::Stdio;
-use sysinfo::{System, SystemExt}; // Removed DiskExt, SystemExt
+use sysinfo::{Disks, System};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
-use tokio::time::{timeout, Duration};
+use tokio::time::{Duration, timeout};
 
 #[derive(Parser)]
 struct Cli {
@@ -30,7 +30,7 @@ fn print_header(step: &str) {
     println!(
         "{}",
         Colour::Yellow.paint(format!(
-            "######################################################\n#                                                    #\n#{:^50#}\n#                                                    #\n######################################################",
+            "######################################################\n#                                                    #\n#{:^50}#\n#                                                    #\n######################################################",
             step.to_uppercase()
         ))
     );
@@ -44,8 +44,12 @@ async fn main() -> Result<()> {
     check_system_resources()?;
     check_docker_daemon_status().await?;
 
-    println!("{}", Colour::Yellow.paint("Starting build and test process..."));
-    let image_name = std::env::var("IMAGE_NAME").unwrap_or_else(|_| "docker-test:latest".to_string());
+    println!(
+        "{}",
+        Colour::Yellow.paint("Starting build and test process...")
+    );
+    let image_name =
+        std::env::var("IMAGE_NAME").unwrap_or_else(|_| "docker-test:latest".to_string());
     let container_name = image_name.replace(":", "_").replace("/", "_");
 
     let build_context = Path::new(&cli.dockerfile_path)
@@ -61,8 +65,13 @@ async fn main() -> Result<()> {
             "{}",
             Colour::Yellow.paint("Hot-fix mode: Building image only, skipping tests...")
         );
-        let _ = build_image(&image_name, &build_context, &cli.dockerfile_path, cli.build_timeout)
-            .await?;
+        let _ = build_image(
+            &image_name,
+            &build_context,
+            &cli.dockerfile_path,
+            cli.build_timeout,
+        )
+        .await?;
         println!(
             "{}",
             Colour::Green.paint(format!(
@@ -87,10 +96,8 @@ async fn main() -> Result<()> {
             if !container_name.is_empty() {
                 println!(
                     "{}",
-                    Colour::Yellow.paint(format!(
-                        "Fetching container logs for {}...",
-                        container_name
-                    ))
+                    Colour::Yellow
+                        .paint(format!("Fetching container logs for {}...", container_name))
                 );
                 let logs_output = Command::new("docker")
                     .arg("logs")
@@ -153,7 +160,8 @@ fn check_system_resources() -> Result<()> {
     let mut sys = System::new_all();
     sys.refresh_all();
 
-    if let Some(disk) = sys.get_disks().first() { // Changed disks() to get_disks()
+    // Use Disks::new_with_refreshed_list().list() to access disks in sysinfo v0.35.2
+    if let Some(disk) = Disks::new_with_refreshed_list().list().first() {
         let total = disk.total_space() as f64 / 1024.0 / 1024.0 / 1024.0;
         let used = (disk.total_space() - disk.available_space()) as f64 / 1024.0 / 1024.0 / 1024.0;
         let free = disk.available_space() as f64 / 1024.0 / 1024.0 / 1024.0;
@@ -236,16 +244,14 @@ async fn check_docker_daemon_status() -> Result<()> {
 }
 
 async fn test_docker_container(cli: &Cli) -> Result<(String, String, String)> {
-    let image_name = std::env::var("IMAGE_NAME").unwrap_or_else(|_| "docker-test:latest".to_string());
+    let image_name =
+        std::env::var("IMAGE_NAME").unwrap_or_else(|_| "docker-test:latest".to_string());
     let health_check_url = format!("http://localhost:3000{}", cli.health_check_path);
 
     if !Path::new(&cli.dockerfile_path).exists() {
         eprintln!(
             "{}",
-            Colour::Red.paint(format!(
-                "Dockerfile not found at {}",
-                cli.dockerfile_path
-            ))
+            Colour::Red.paint(format!("Dockerfile not found at {}", cli.dockerfile_path))
         );
         return Err(anyhow::anyhow!(
             "Dockerfile not found at {}",
@@ -314,8 +320,7 @@ async fn test_docker_container(cli: &Cli) -> Result<(String, String, String)> {
             "{}",
             Colour::Yellow.paint(format!(
                 "Health check attempt {}/{}",
-                attempts,
-                max_attempts
+                attempts, max_attempts
             ))
         );
         match timeout(
@@ -356,9 +361,7 @@ async fn test_docker_container(cli: &Cli) -> Result<(String, String, String)> {
                     "{}",
                     Colour::Red.paint(format!(
                         "Health check attempt {}/{} failed: {}",
-                        attempts,
-                        max_attempts,
-                        e
+                        attempts, max_attempts, e
                     ))
                 );
                 if attempts == max_attempts {
@@ -370,9 +373,7 @@ async fn test_docker_container(cli: &Cli) -> Result<(String, String, String)> {
                     "{}",
                     Colour::Yellow.paint(format!(
                         "Health check attempt {}/{} timed out after {} seconds",
-                        attempts,
-                        max_attempts,
-                        cli.health_check_timeout
+                        attempts, max_attempts, cli.health_check_timeout
                     ))
                 );
                 if attempts == max_attempts {
@@ -400,10 +401,7 @@ async fn build_image(
 ) -> Result<String> {
     println!(
         "{}",
-        Colour::Yellow.paint(format!(
-            "Starting Docker image build for {}...",
-            image_name
-        ))
+        Colour::Yellow.paint(format!("Starting Docker image build for {}...", image_name))
     );
     let mut child = Command::new("docker")
         .arg("build")
@@ -430,10 +428,9 @@ async fn build_image(
         let mut reader = BufReader::new(stdout).lines();
         loop {
             match reader.next_line().await {
-                Ok(Some(line)) => println!(
-                    "{}",
-                    Colour::Yellow.paint(format!("Build log: {}", line))
-                ),
+                Ok(Some(line)) => {
+                    println!("{}", Colour::Yellow.paint(format!("Build log: {}", line)))
+                }
                 Ok(None) => break,
                 Err(e) => {
                     eprintln!(
@@ -450,10 +447,9 @@ async fn build_image(
         let mut reader = BufReader::new(stderr).lines();
         loop {
             match reader.next_line().await {
-                Ok(Some(line)) => println!(
-                    "{}",
-                    Colour::Yellow.paint(format!("Build log: {}", line))
-                ),
+                Ok(Some(line)) => {
+                    println!("{}", Colour::Yellow.paint(format!("Build log: {}", line)))
+                }
                 Ok(None) => break,
                 Err(e) => {
                     eprintln!(
@@ -471,7 +467,10 @@ async fn build_image(
         .map_err(|_| anyhow::anyhow!("Docker build timed out after {} seconds", build_timeout))?;
     let status = status?;
     if !status.success() {
-        return Err(anyhow::anyhow!("Docker build failed with status: {}", status));
+        return Err(anyhow::anyhow!(
+            "Docker build failed with status: {}",
+            status
+        ));
     }
 
     stdout_task.await.ok();
@@ -595,16 +594,15 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
             .unwrap_or(false);
         println!(
             "{}",
-            Colour::Yellow.paint(format!(
-                "Container \"{}\" exists: \"{}\"",
-                container_name, container_exists
-            ))
+            Colour::Yellow.paint(format!("Container \"{}\" exists: \"{}\"",
+                container_name, container_exists)
+            )
         );
 
         if container_exists {
             println!(
                 "{}",
-                Colour::Yellow.paint(format!("Stopping container \"{}\".", container_name))
+                Colour::Yellow.paint(format!("Stopping container \"{}\"", container_name))
             );
             let output = Command::new("docker")
                 .arg("stop")
@@ -707,7 +705,10 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
         if image_exists && !image_id.is_empty() {
             println!(
                 "{}",
-                Colour::Yellow.paint(format!("Removing image \"{}\" (ID: \"{}\").", _image_name, image_id))
+                Colour::Yellow.paint(format!(
+                    "Removing image \"{}\" (ID: \"{}\").",
+                    _image_name, image_id
+                ))
             );
             let output = Command::new("docker")
                 .arg("rmi")
