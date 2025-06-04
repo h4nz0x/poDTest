@@ -819,8 +819,7 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
             "{}",
             Colour::Red.paint(format!(
                 "Cleanup failed: container_exists={}, image_exists={}",
-                container_still_exists,
-                image_still_exists
+                container_still_exists, image_still_exists
             ))
         );
         return Err(anyhow::anyhow!(
@@ -830,9 +829,6 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
         ));
     }
 
-    println!(
-        "{}",
-        Colour::Green.paint("Cleanup completed successfully")
-    );
+    println!("{}", Colour::Green.paint("Cleanup completed successfully"));
     Ok(())
 }
