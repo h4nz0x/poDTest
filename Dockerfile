@@ -33,5 +33,5 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 COPY main.py .
 
 USER appuser
-EXPOSE 3000
-CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--timeout", "120", "--keep-alive", "5", "main:app", "-b", "0.0.0.0:3000"]
+EXPOSE 8000
+CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--timeout", "120", "--keep-alive", "5", "main:app", "-b", "0.0.0.0:8000"]
