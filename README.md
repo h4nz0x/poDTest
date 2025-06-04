@@ -161,7 +161,7 @@ Contributions are welcome! To contribute:
 4. Push to the branch (`git push origin feature/your-feature`).
 5. Open a pull request.
 
-Please include tests and update documentation as needed. See `CONTRIBUTING.md` (TBD) for details.
+Please include tests and update documentation as needed. See `CONTRIBUTING.md` for details.
 
 ## License
 
@@ -173,4 +173,4 @@ For issues or feature requests, open an issue on the GitHub repository or contac
 
 ---
 
-Contact [h4nz0x](https://github.com/h4nz0x) for issues and ideas.
+poDTest
