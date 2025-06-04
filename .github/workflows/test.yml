@@ -59,44 +59,44 @@ jobs:
 
     - name: Run integration test - Success case
       run: |
-        cargo run --release -- --dockerfile-path Dockerfile --port 8000 --health-check-path /health
+        cargo run --release -- --dockerfile-path ./Dockerfile --port 8000 --health-check-path /health
       env:
         DOCKER_HOST: unix:///var/run/docker.sock
 
     - name: Verify cleanup after success
       run: |
-        if [ -n "$(docker ps -a -q)" ] || [ -n "$(docker images -q my-app:latest)" ]; then
+        if [ -n "$(docker ps -a -q)" ] || [ -n "$(docker images -q docker-test:latest)" ]; then
           echo "Cleanup failed: Containers or images remain"
           docker ps -a
-          docker images my-app:latest
+          docker images docker-test:latest
           exit 1
         fi
 
     - name: Run integration test - Failure case
       run: |
-        cargo run --release -- --dockerfile-path Dockerfile --port 8000 --health-check-path /invalid || true
+        cargo run --release -- --dockerfile-path ./Dockerfile --port 8000 --health-check-path /invalid || true
       env:
         DOCKER_HOST: unix:///var/run/docker.sock
 
     - name: Verify cleanup after failure
       run: |
-        if [ -n "$(docker ps -a -q)" ] || [ -n "$(docker images -q my-app:latest)" ]; then
+        if [ -n "$(docker ps -a -q)" ] || [ -n "$(docker images -q docker-test:latest)" ]; then
           echo "Cleanup failed: Containers or images remain"
           docker ps -a
-          docker images my-app:latest
+          docker images docker-test:latest
           exit 1
         fi
 
     - name: Run integration test - Hot-fix case
       run: |
-        cargo run --release -- --dockerfile-path Dockerfile --hot-fix
+        cargo run --release -- --dockerfile-path ./Dockerfile --hot-fix
       env:
         DOCKER_HOST: unix:///var/run/docker.sock
 
     - name: Verify no cleanup after hot-fix
       run: |
-        if [ -z "$(docker images -q my-app:latest)" ]; then
+        if [ -z "$(docker images -q docker-test:latest)" ]; then
           echo "Hot-fix failed: Image was not built"
           exit 1
         fi
-        docker rmi -f my-app:latest
+        docker rmi -f docker-test:latest
