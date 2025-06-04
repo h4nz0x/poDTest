@@ -712,11 +712,7 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
         if image_exists && !image_id.is_empty() {
             println!(
                 "{}",
-                Colour::Yellow.paint(format!(
-                    "Removing image '{}' (ID: '{}').",
-                    _image_name,
-                    image_id
-                ))
+                Colour::Yellow.paint(format!("Removing image '{}' (ID: '{}').", _image_name, image_id))
             );
             let output = Command::new("docker")
                 .arg("rmi")
