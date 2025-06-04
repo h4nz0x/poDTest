@@ -594,15 +594,16 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
             .unwrap_or(false);
         println!(
             "{}",
-            Colour::Yellow.paint(format!("Container \"{}\" exists: \"{}\"",
-                container_name, container_exists)
-            )
+            Colour::Yellow.paint(format!(
+                "Container \"{}\" exists: \"{}\"",
+                container_name, container_exists
+            ))
         );
 
         if container_exists {
             println!(
                 "{}",
-                Colour::Yellow.paint(format!("Stopping container \"{}\"", container_name))
+                Colour::Yellow.paint(format!("Stopping container \"{}\".", container_name))
             );
             let output = Command::new("docker")
                 .arg("stop")
