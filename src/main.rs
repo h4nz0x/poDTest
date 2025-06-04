@@ -553,11 +553,12 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
     println!(
         "{}",
         Colour::Yellow.paint(format!(
-            "Cleanup started: container_name=\"{}\", image_name=\"{}\", image_id=\"{}\".",
+            "Cleanup started: container_name=\"{}\", image=\"{}\", image_id=\"{}\".",
             container_name, _image_name, image_id
         ))
     );
 
+    // Check Docker daemon
     let daemon_check = Command::new("docker").arg("info").output().await;
     if let Err(e) = daemon_check {
         eprintln!(
@@ -581,6 +582,83 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
         return Err(anyhow::anyhow!("Docker daemon error"));
     }
 
+    // Clean up BuildKit containers
+    println!("{}", Colour::Yellow.paint("Cleaning up BuildKit containers..."));
+    let buildkit_output = Command::new("docker")
+        .args([
+            "ps",
+            "-a",
+            "-q",
+            "--filter",
+            "ancestor=moby/buildkit:buildx-stable-1",
+        ])
+        .args(["--filter", "name=buildx_buildkit_"])
+        .output()
+        .await
+        .context("Failed to list BuildKit containers")?;
+    let buildkit_container_ids = String::from_utf8_lossybuildkit_output.stdout(&)
+        .trim()
+        .lines()
+        .collect::<Vec<_>>();
+    if !buildkit_container_ids.is_empty() {
+        println!(
+            "{}",
+            Colour::Yellow.paint(format!(
+                "Found BuildKit containers: {:}",
+                buildkit_container_ids
+            ))
+        );
+        for id in buildkit_container_ids {
+            let stop_output = Command::new("docker")
+                .arg("stop")
+                .arg(id)
+                .output()
+                .await
+                .context(format!("Failed to stop {} BuildKit container", id))?;
+            if stop_output.status.success() {
+                println!(
+                    "{}",
+                    Colour::Yellow.paint(format!("Stopped {}: BuildKit container", id))
+                );
+            } else {
+                eprintln!(
+                    "{}",
+                    Colour::Red.paint(format!(
+                        "Failed to stop {}: BuildKit container",
+                        id,
+                        String::from_utf8_lossy(&stop_output.stderr)
+                    ))
+                );
+            }
+
+            let rm_output = Command::new("docker")
+                .arg("rm")
+                .arg("-f")
+                .arg(id)
+                .output()
+                .await
+                .context(format!("Failed to remove {} BuildKit container", id))?;
+            if rm_output.status.success() {
+                println!(
+                    "{}",
+                    Colour::Yellow.paint(format!("Removed {}: BuildKit container", id))
+                );
+            } else {
+                eprintln!(
+                    "{}",
+                    Colour::Red.paint(format!(
+                        "Failed to remove {}: BuildKit container",
+                        id,
+                        String::from_utf8_lossy(&rm_output.stderr)
+                    ))
+                );
+            }
+        }
+    } else {
+        println!("{}", Colour::Yellow.paint("No BuildKit containers found"));
+    }
+
+    // Clean up specified container
     if !container_name.is_empty() {
         let container_exists = Command::new("docker")
             .arg("ps")
@@ -594,8 +672,8 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
             .unwrap_or(false);
         println!(
             "{}",
-            Colour::Yellow.paint(format!(
-                "Container \"{}\" exists: \"{}\"",
+            Colour::Yellow.colour(format!(
+                "Container \"{}\" exists: {}",
                 container_name, container_exists
             ))
         );
@@ -603,7 +681,7 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
         if container_exists {
             println!(
                 "{}",
-                Colour::Yellow.paint(format!("Stopping container \"{}\".", container_name))
+                Colour::Yellow.paint(format!("Stopping container: {}", container_name))
             );
             let output = Command::new("docker")
                 .arg("stop")
@@ -624,23 +702,23 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
                     Colour::Red.paint(format!(
                         "Container stop stderr:\n{}",
                         String::from_utf8_lossy(&output.stderr)
-                    ))
+                        ))
                 );
             }
             if !output.status.success() {
                 eprintln!(
                     "{}",
                     Colour::Red.paint(format!(
-                        "Failed to stop container (exit code {}): stderr: {}",
-                        output.status,
+                        "Failed to stop {}: container",
+                        container_name,
                         String::from_utf8_lossy(&output.stderr)
                     ))
-                );
-            }
+                ) {
+            };
 
             println!(
                 "{}",
-                Colour::Yellow.paint(format!("Removing container \"{}\".", container_name))
+                Colour::Yellow.paint(format!("Removing {}: container", container_name)),
             );
             let output = Command::new("docker")
                 .arg("rm")
@@ -669,8 +747,8 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
                 eprintln!(
                     "{}",
                     Colour::Red.paint(format!(
-                        "Failed to remove container (exit code {}): stderr: {}",
-                        output.status,
+                        "Failed to remove {}: container",
+                        container_name,
                         String::from_utf8_lossy(&output.stderr)
                     ))
                 );
@@ -686,11 +764,10 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
         }
     }
 
-    if !_image_name.is_empty() {
+    // Clean up specified image
+    if !_image_name.is_empty() && !image_id.is_empty() {
         let image_exists = Command::new("docker")
-            .arg("images")
-            .arg("-q")
-            .arg(_image_name)
+            .args(["images", "-q", image_id])
             .output()
             .await
             .map(|o| !o.stdout.is_empty())
@@ -698,26 +775,21 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
         println!(
             "{}",
             Colour::Yellow.paint(format!(
-                "Image \"{}\" exists: \"{}\"",
-                _image_name, image_exists
+                "Image ID \"{}\" exists: {}",
+                image_id, image_exists
             ))
         );
 
-        if image_exists && !image_id.is_empty() {
+        if image_exists {
             println!(
                 "{}",
-                Colour::Yellow.paint(format!(
-                    "Removing image \"{}\" (ID: \"{}\").",
-                    _image_name, image_id
-                ))
+                Colour::Yellow.paint(format!("Removing image by ID: {}", image_id))
             );
             let output = Command::new("docker")
-                .arg("rmi")
-                .arg("-f")
-                .arg(image_id)
+                .args(["rmi", "-f", image_id])
                 .output()
                 .await
-                .context("Failed to remove image by ID")?;
+                .context(format!("Failed to remove image by ID: {}", image_id))?;
             println!(
                 "{}",
                 Colour::Yellow.paint(format!(
@@ -738,87 +810,188 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
                 eprintln!(
                     "{}",
                     Colour::Red.paint(format!(
-                        "Failed to remove image by ID (exit code {}): stderr: {}",
-                        output.status,
+                        "Failed to remove image by ID {}: {}",
+                        image_id,
                         String::from_utf8_lossy(&output.stderr)
                     ))
                 );
             }
-        }
-
-        if image_exists {
-            println!(
-                "{}",
-                Colour::Yellow.paint(format!("Removing image \"{}\" by name.", _image_name))
-            );
-            let output = Command::new("docker")
-                .arg("rmi")
-                .arg("-f")
-                .arg(_image_name)
-                .output()
-                .await
-                .context("Failed to remove image by name")?;
+        } else {
             println!(
                 "{}",
                 Colour::Yellow.paint(format!(
-                    "Image remove output (name):\n{}",
-                    String::from_utf8_lossy(&output.stdout)
+                    "Image ID \"{}\" does not exist, checking name: {}.",
+                    image_id, _image_name
                 ))
             );
-            if !output.stderr.is_empty() {
-                eprintln!(
+            let name_exists = Command::new("docker")
+                .args(["images", "-q", _image_name])
+                .output()
+                .await
+                .map(|o| !o.stdout.is_empty())
+                .unwrap_or(false);
+            if name_exists {
+                println!(
                     "{}",
-                    Colour::Red.paint(format!(
-                        "Image remove stderr (name):\n{}",
-                        String::from_utf8_lossy(&output.stderr)
+                    Colour::Yellow.paint(format!("Removing image by name: {}", _image_name))
+                );
+                let output = Command::new("docker")
+                    .args(["rmi", "-f", _image_name])
+                    .output()
+                    .await
+                    .context(format!("Failed to remove image by name: {}", _image_name))?;
+                println!(
+                    "{}",
+                    Colour::Yellow.paint(format!(
+                        "Image remove output (name):\n{}",
+                        String::from_utf8_lossy(&output.stdout)
                     ))
                 );
-            }
-            if !output.status.success() {
-                eprintln!(
+                if !output.stderr.is_empty() {
+                    eprintln!(
+                        "{}",
+                        Colour::Red.paint(format!(
+                            "Image remove stderr (name):\n{}",
+                            String::from_utf8_lossy(&output.stderr)
+                        ))
+                    );
+                }
+                if !output.status.success() {
+                    eprintln!(
+                        "{}",
+                        Colour::Red.paint(format!(
+                            "Failed to remove image by name {}: {}",
+                            _image_name,
+                            String::from_utf8_lossy(&output.stderr)
+                        ))
+                    );
+                }
+            } else {
+                println!(
                     "{}",
-                    Colour::Red.paint(format!(
-                        "Failed to remove image by name (exit code {}): stderr: {}",
-                        output.status,
-                        String::from_utf8_lossy(&output.stderr)
+                    Colour::Yellow.paint(format!(
+                        "Image \"{}\" does not exist, skipping removal.",
+                        _image_name
                     ))
                 );
             }
         }
     }
 
-    // Verify cleanup
+    // Clean up dangling images
+    println!("{}", Colour::Yellow.paint("Cleaning up dangling images..."));
+    let dangling_output = Command::new("docker")
+        .args(["images", "-f", "dangling=true", "-q"])
+        .output()
+        .await
+        .context("Failed to list dangling images")?;
+    let dangling_image_ids = String::from_utf8_lossy(&dangling_output.stdout)
+        .trim()
+        .lines()
+        .collect::<Vec<_>>();
+    if !dangling_image_ids.is_empty() {
+        println!(
+            "{}",
+            Colour::Yellow.paint(format!("Found dangling images: {:?}", dangling_image_ids))
+        );
+        let output = Command::new("docker")
+            .args(["rmi", "-f"])
+            .args(&dangling_image_ids)
+            .output()
+            .await
+            .context("Failed to remove dangling images")?;
+        println!(
+            "{}",
+            Colour::Yellow.paint(format!(
+                "Dangling images remove output:\n{}",
+                String::from_utf8_lossy(&output.stdout)
+            ))
+        );
+        if !output.stderr.is_empty() {
+            eprintln!(
+                "{}",
+                Colour::Red.paint(format!(
+                    "Dangling images remove stderr:\n{}",
+                    String::from_utf8_lossy(&output.stderr)
+                ))
+            );
+        }
+        if !output.status.success() {
+            eprintln!(
+                "{}",
+                Colour::Red.paint(format!(
+                    "Failed to remove dangling images: {}",
+                    String::from_utf8_lossy(&output.stderr)
+                ))
+            );
+        }
+    } else {
+        println!("{}", Colour::Yellow.paint("No dangling images found."));
+    }
+
+    // Comprehensive cleanup verification
     let container_still_exists = Command::new("docker")
-        .arg("ps")
-        .arg("-a")
-        .arg("-q")
-        .arg("--filter")
-        .arg(format!("name={}", container_name))
+        .args(["ps", "-a", "-q"])
         .output()
         .await
         .map(|o| !o.stdout.is_empty())
         .unwrap_or(false);
     let image_still_exists = Command::new("docker")
-        .arg("images")
-        .arg("-q")
-        .arg(_image_name)
+        .args(["images", "-q", _image_name])
+        .output()
+        .await
+        .map(|o| !o.stdout.is_empty())
+        .unwrap_or(false);
+    let dangling_still_exist = Command::new("docker")
+        .args(["images", "-f", "dangling=true", "-q"])
         .output()
         .await
         .map(|o| !o.stdout.is_empty())
         .unwrap_or(false);
 
-    if container_still_exists || image_still_exists {
+    if container_still_exists || image_still_exists || dangling_still_exist {
         eprintln!(
             "{}",
             Colour::Red.paint(format!(
-                "Cleanup failed: container_exists=\"{}\", image_exists=\"{}\"",
-                container_still_exists, image_still_exists
+                "Cleanup failed: containers_exist={}, image_exists={}, dangling_images_exist={}",
+                container_still_exists,
+                image_still_exists,
+                dangling_still_exist
             ))
         );
+        if container_still_exists {
+            let ps_output = Command::new("docker")
+                .args(["ps", "-a"])
+                .output()
+                .await
+                .unwrap_or_default();
+            eprintln!(
+                "{}",
+                Colour::Red.paint(format!(
+                    "Remaining containers:\n{}",
+                    String::from_utf8_lossy(&ps_output.stdout)
+                ))
+            );
+        }
+        if image_still_exists || dangling_still_exist {
+            let images_output = Command::new("docker")
+                .args(["images"])
+                .output()
+                .await
+                .unwrap_or_default();
+            eprintln!(
+                "{}",
+                Colour::Red.paint(format!(
+                    "Remaining images:\n{}",
+                    String::from_utf8_lossy(&images_output.stdout)
+                ))
+            );
+        }
         return Err(anyhow::anyhow!(
-            "Failed to clean up container {} or image {}",
-            container_name,
-            _image_name
+            "Failed to clean up: containers={}, image={}, dangling={}",
+            container_still_exists,
+            image_still_exists,
+            dangling_still_exist
         ));
     }
 
