@@ -10,13 +10,90 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Set up Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
+        components: rustfmt, clippy
+
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v3
+
+    - name: Cache Cargo dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: ${{ runner.os }}-cargo-
+
+    - name: Check code formatting
+      run: cargo fmt --all -- --check
+
+    - name: Run Clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+
     - name: Build
-      run: cargo build --verbose
-    - name: Run tests
+      run: cargo build --release --verbose
+
+    - name: Run unit tests
       run: cargo test --verbose
+
+    - name: Verify test files exist
+      run: |
+        ls -l Dockerfile main.py requirements.txt
+        cat Dockerfile
+        cat requirements.txt
+        cat main.py
+
+    - name: Run integration test - Success case
+      run: |
+        cargo run --release -- --dockerfile-path Dockerfile --port 8000 --health-check-path /health
+      env:
+        DOCKER_HOST: unix:///var/run/docker.sock
+
+    - name: Verify cleanup after success
+      run: |
+        if [ -n "$(docker ps -a -q)" ] || [ -n "$(docker images -q my-app:latest)" ]; then
+          echo "Cleanup failed: Containers or images remain"
+          docker ps -a
+          docker images my-app:latest
+          exit 1
+        fi
+
+    - name: Run integration test - Failure case
+      run: |
+        cargo run --release -- --dockerfile-path Dockerfile --port 8000 --health-check-path /invalid || true
+      env:
+        DOCKER_HOST: unix:///var/run/docker.sock
+
+    - name: Verify cleanup after failure
+      run: |
+        if [ -n "$(docker ps -a -q)" ] || [ -n "$(docker images -q my-app:latest)" ]; then
+          echo "Cleanup failed: Containers or images remain"
+          docker ps -a
+          docker images my-app:latest
+          exit 1
+        fi
+
+    - name: Run integration test - Hot-fix case
+      run: |
+        cargo run --release -- --dockerfile-path Dockerfile --hot-fix
+      env:
+        DOCKER_HOST: unix:///var/run/docker.sock
+
+    - name: Verify no cleanup after hot-fix
+      run: |
+        if [ -z "$(docker images -q my-app:latest)" ]; then
+          echo "Hot-fix failed: Image was not built"
+          exit 1
+        fi
+        docker rmi -f my-app:latest
