@@ -553,7 +553,7 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
     println!(
         "{}",
         Colour::Yellow.paint(format!(
-            "Cleanup started: container_name=\"{}\", image=\"{}\", image_id=\"{}\".",
+            "Cleanup started: container_name=\"{}\", image_name=\"{}\", image_id=\"{}\".",
             container_name, _image_name, image_id
         ))
     );
@@ -596,7 +596,7 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
         .output()
         .await
         .context("Failed to list BuildKit containers")?;
-    let buildkit_container_ids = String::from_utf8_lossybuildkit_output.stdout(&)
+    let buildkit_container_ids = String::from_utf8_lossy(&buildkit_output.stdout)
         .trim()
         .lines()
         .collect::<Vec<_>>();
@@ -604,7 +604,7 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
         println!(
             "{}",
             Colour::Yellow.paint(format!(
-                "Found BuildKit containers: {:}",
+                "Found BuildKit containers: {:?}",
                 buildkit_container_ids
             ))
         );
@@ -614,17 +614,17 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
                 .arg(id)
                 .output()
                 .await
-                .context(format!("Failed to stop {} BuildKit container", id))?;
+                .context(format!("Failed to stop BuildKit container {}", id))?;
             if stop_output.status.success() {
                 println!(
                     "{}",
-                    Colour::Yellow.paint(format!("Stopped {}: BuildKit container", id))
+                    Colour::Yellow.paint(format!("Stopped BuildKit container: {}", id))
                 );
             } else {
                 eprintln!(
                     "{}",
                     Colour::Red.paint(format!(
-                        "Failed to stop {}: BuildKit container",
+                        "Failed to stop BuildKit container {}: {}",
                         id,
                         String::from_utf8_lossy(&stop_output.stderr)
                     ))
@@ -637,17 +637,17 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
                 .arg(id)
                 .output()
                 .await
-                .context(format!("Failed to remove {} BuildKit container", id))?;
+                .context(format!("Failed to remove BuildKit container {}", id))?;
             if rm_output.status.success() {
                 println!(
                     "{}",
-                    Colour::Yellow.paint(format!("Removed {}: BuildKit container", id))
+                    Colour::Yellow.paint(format!("Removed BuildKit container: {}", id))
                 );
             } else {
                 eprintln!(
                     "{}",
                     Colour::Red.paint(format!(
-                        "Failed to remove {}: BuildKit container",
+                        "Failed to remove BuildKit container {}: {}",
                         id,
                         String::from_utf8_lossy(&rm_output.stderr)
                     ))
@@ -655,7 +655,7 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
             }
         }
     } else {
-        println!("{}", Colour::Yellow.paint("No BuildKit containers found"));
+        println!("{}", Colour::Yellow.paint("No BuildKit containers found."));
     }
 
     // Clean up specified container
@@ -672,7 +672,7 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
             .unwrap_or(false);
         println!(
             "{}",
-            Colour::Yellow.colour(format!(
+            Colour::Yellow.paint(format!(
                 "Container \"{}\" exists: {}",
                 container_name, container_exists
             ))
@@ -702,23 +702,23 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
                     Colour::Red.paint(format!(
                         "Container stop stderr:\n{}",
                         String::from_utf8_lossy(&output.stderr)
-                        ))
+                    ))
                 );
             }
             if !output.status.success() {
                 eprintln!(
                     "{}",
                     Colour::Red.paint(format!(
-                        "Failed to stop {}: container",
+                        "Failed to stop container {}: {}",
                         container_name,
                         String::from_utf8_lossy(&output.stderr)
                     ))
-                ) {
-            };
+                );
+            }
 
             println!(
                 "{}",
-                Colour::Yellow.paint(format!("Removing {}: container", container_name)),
+                Colour::Yellow.paint(format!("Removing container: {}", container_name))
             );
             let output = Command::new("docker")
                 .arg("rm")
@@ -747,7 +747,7 @@ async fn cleanup_docker(image_id: &str, container_name: &str, _image_name: &str)
                 eprintln!(
                     "{}",
                     Colour::Red.paint(format!(
-                        "Failed to remove {}: container",
+                        "Failed to remove container {}: {}",
                         container_name,
                         String::from_utf8_lossy(&output.stderr)
                     ))
