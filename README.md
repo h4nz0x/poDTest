@@ -85,7 +85,7 @@ Tests /check with 3 retries, 10-second timeout per attempt.
 This tool is designed to be used as a GitHub Action. A dedicated `action.yml` is under development for the GitHub Marketplace. To use it locally in a workflow:
 
 ### Add the Binary:
-Copy `target/release/container-test-tool` to your repository or build it in your workflow.
+Copy `target/release/poDTest` to your repository or build it in your workflow.
 
 ### Example Workflow (placeholder):
 ```yaml
@@ -98,7 +98,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      - name: Build container-test-tool
+      - name: Build Container Test Tool
         run: cargo build --release
       - name: Test Docker Image
         run: ./target/release/poDTest --dockerfile-path Dockerfile --port 8000 --health-check-path /health
