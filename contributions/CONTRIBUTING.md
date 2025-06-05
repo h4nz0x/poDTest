@@ -127,5 +127,3 @@ Please adhere to our Code of Conduct (TBD) to ensure a welcoming and inclusive e
 ## Questions?
 
 If you have questions or need help, open an issue or reach out via the GitHub repository. Thank you for contributing to `poDTest`!
-
-*Together, we're building a robust CI/CD tool!*
