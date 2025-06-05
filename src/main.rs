@@ -405,14 +405,17 @@ async fn build_image(
     let stdout_task = tokio::spawn(async move {
         let mut reader = BufReader::new(stdout).lines();
         while let Ok(Some(line)) = reader.next_line().await {
-            println!("{}", Colour::Yellow.paint(format!("Build log: {}", line)))
+            //println!("{}", Colour::Yellow.paint(format!("Build log: {}", line)))
+            println!("{} {}", Colour::Yellow.paint("Build log:"), line)
         }
     });
 
     let stderr_task = tokio::spawn(async move {
         let mut reader = BufReader::new(stderr).lines();
         while let Ok(Some(line)) = reader.next_line().await {
-            println!("{}", Colour::Yellow.paint(format!("Build log: {}", line)))
+            //println!("{}", Colour::Yellow.paint(format!("Build log: {}", line)))
+            println!("{} {}", Colour::Yellow.paint("Build log:"), line)
+            
         }
     });
 
