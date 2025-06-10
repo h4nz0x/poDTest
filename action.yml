@@ -1,44 +1,52 @@
 name: poDTest Action
+description: Run Docker container tests using the poDTest Rust CLI tool
 author: h4nz0x
-description: Run poDTest to build, test, and clean up a Docker web app container
+branding:
+  icon: anchor
+  color: purple
 inputs:
   dockerfile-path:
     description: Path to the Dockerfile
-    required: true
-    default: ./deployments/Dockerfile
+    required: false
+    default: ./Dockerfile
   port:
-    description: Port to expose
-    required: true
+    description: Internal port to expose
+    required: false
     default: "8000"
   health-check-path:
     description: Health check endpoint path
-    required: true
+    required: false
     default: /health
   health-check-timeout:
     description: Timeout for health check in seconds
-    required: true
+    required: false
     default: "10"
   health-check-interval:
     description: Number of health check attempts
-    required: true
+    required: false
     default: "5"
   build-timeout:
     description: Timeout for image build in seconds
-    required: true
+    required: false
     default: "300"
   hot-fix:
     description: Enable hot-fix mode (true/false)
-    required: true
-    default: "false"
+    required: false
+    default: ""
 runs:
-  using: docker
-  image: Dockerfile
-  env:
-    DOCKERFILE_PATH: ${{ inputs.dockerfile-path }}
-    PORT: ${{ inputs.port }}
-    HEALTH_CHECK_PATH: ${{ inputs.health-check-path }}
-    HEALTH_CHECK_TIMEOUT: ${{ inputs.health-check-timeout }}
-    HEALTH_CHECK_INTERVAL: ${{ inputs.health-check-interval }}
-    BUILD_TIMEOUT: ${{ inputs.build-timeout }}
-    HOT_FIX: ${{ inputs.hot-fix }}
-  entrypoint: /entrypoint.sh
+  using: composite
+  steps:
+    - name: Make poDTest executable
+      shell: bash
+      run: chmod +x ${{ github.action_path }}/poDTest
+    - name: Run poDTest
+      shell: bash
+      run: ${{ github.action_path }}/entrypoint.sh
+      env:
+        INPUT_DOCKERFILE_PATH: ${{ inputs.dockerfile-path }}
+        INPUT_PORT: ${{ inputs.port }}
+        INPUT_HEALTH_CHECK_PATH: ${{ inputs.health-check-path }}
+        INPUT_HEALTH_CHECK_TIMEOUT: ${{ inputs.health-check-timeout }}
+        INPUT_HEALTH_CHECK_INTERVAL: ${{ inputs.health-check-interval }}
+        INPUT_BUILD_TIMEOUT: ${{ inputs.build-timeout }}
+        INPUT_HOT_FIX: ${{ inputs.hot-fix }}
