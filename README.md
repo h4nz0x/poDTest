@@ -1,10 +1,10 @@
 # poDTest Action
 
-A GitHub Action to run Docker container tests using the `poDTest` Rust CLI tool. This action builds, tests, and cleans up a Docker container based on a specified Dockerfile, with support for health checks and hot-fix mode for GitHub Actions integration.
+A GitHub Action to run Docker container tests using the `poDTest` Rust CLI tool. This action builds, tests, and cleans up a Docker web app container based on a specified Dockerfile, with support for health checks and hot-fix mode for GitHub Actions integration.
 
 ## Features
 
-* Builds and tests Docker containers.
+* Builds and tests Docker web app containers.
 * Supports custom ports (e.g., maps `3000:8000`).
 * Performs health checks (e.g., `http://localhost:3000/health`).
 * Cleans up Docker resources after testing.
@@ -14,7 +14,7 @@ A GitHub Action to run Docker container tests using the `poDTest` Rust CLI tool.
 ## Prerequisites
 
 * Docker installed and running on the GitHub Actions runner.
-* A Dockerfile in the specified path (e.g., `./deployments/Dockerfile`).
+* A Dockerfile in the specified path (e.g., `./Dockerfile`).
 * A service responding to the health check endpoint (e.g., `/health`).
 
 ## Usage
