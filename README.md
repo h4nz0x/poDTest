@@ -1,4 +1,4 @@
-# poDTest Action
+# poDTest
 
 A GitHub Action to run Docker container tests using the `poDTest` Rust CLI tool. This action builds, tests, and cleans up a Docker web app container based on a specified Dockerfile, with support for health checks and hot-fix mode for GitHub Actions integration.
 

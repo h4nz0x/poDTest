@@ -1,5 +1,5 @@
-name: poDTest - ACT
-description: Run Docker web app container tests using the poDTest Rust CLI tool
+name: poDTest Action
+description: Run poDTest to build, test, and clean up a Docker container
 author: h4nz0x
 branding:
   icon: activity
@@ -8,7 +8,7 @@ inputs:
   dockerfile-path:
     description: Path to the Dockerfile
     required: false
-    default: ./Dockerfile
+    default: ./deployments/Dockerfile
   port:
     description: Internal port to expose
     required: false
@@ -34,19 +34,14 @@ inputs:
     required: false
     default: ""
 runs:
-  using: composite
-  steps:
-    - name: Make poDTest executable
-      shell: bash
-      run: chmod +x ${{ github.action_path }}/poDTest
-    - name: Run poDTest
-      shell: bash
-      run: ${{ github.action_path }}/entrypoint.sh
-      env:
-        INPUT_DOCKERFILE_PATH: ${{ inputs.dockerfile-path }}
-        INPUT_PORT: ${{ inputs.port }}
-        INPUT_HEALTH_CHECK_PATH: ${{ inputs.health-check-path }}
-        INPUT_HEALTH_CHECK_TIMEOUT: ${{ inputs.health-check-timeout }}
-        INPUT_HEALTH_CHECK_INTERVAL: ${{ inputs.health-check-interval }}
-        INPUT_BUILD_TIMEOUT: ${{ inputs.build-timeout }}
-        INPUT_HOT_FIX: ${{ inputs.hot-fix }}
+  using: docker
+  image: Dockerfile
+  env:
+    INPUT_DOCKERFILE_PATH: ${{ inputs.dockerfile-path }}
+    INPUT_PORT: ${{ inputs.port }}
+    INPUT_HEALTH_CHECK_PATH: ${{ inputs.health-check-path }}
+    INPUT_HEALTH_CHECK_TIMEOUT: ${{ inputs.health-check-timeout }}
+    INPUT_HEALTH_CHECK_INTERVAL: ${{ inputs.health-check-interval }}
+    INPUT_BUILD_TIMEOUT: ${{ inputs.build-timeout }}
+    INPUT_HOT_FIX: ${{ inputs.hot-fix }}
+  entrypoint: /entrypoint.sh

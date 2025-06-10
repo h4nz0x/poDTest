@@ -1,13 +1,12 @@
 #!/bin/bash
 set -e
 
-# Use the correct binary name - check which one exists
-if [[ -f "${GITHUB_ACTION_PATH}/poDTest" ]]; then
-    BINARY="${GITHUB_ACTION_PATH}/poDTest"
-elif [[ -f "${GITHUB_ACTION_PATH}/podtest" ]]; then
-    BINARY="${GITHUB_ACTION_PATH}/podtest"
-else
-    echo "Error: Neither poDTest nor podtest binary found in ${GITHUB_ACTION_PATH}"
+# Set binary path
+BINARY="/usr/local/bin/poDTest"
+
+# Verify binary exists
+if [[ ! -f "$BINARY" ]]; then
+    echo "Error: poDTest binary not found at $BINARY"
     exit 1
 fi
 
