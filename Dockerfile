@@ -1,8 +1,10 @@
-FROM rust:1.80-slim-bookworm
+FROM debian:bullseye-slim
+
+# Install OpenSSL for dynamic binary (skip if using musl)
+RUN apt-get update && apt-get install -y libssl3 && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY . .
-RUN cp ./poDTest /usr/local/bin/poDTest
+COPY poDTest /usr/local/bin/poDTest
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
