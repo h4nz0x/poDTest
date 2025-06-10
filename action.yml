@@ -1,4 +1,4 @@
-name: poDTest Action
+name: poDTest
 description: Run Docker container tests using the poDTest Rust CLI tool
 author: h4nz0x
 branding:
