@@ -1,5 +1,5 @@
 name: poDTest - ACT
-description: Run Docker container tests using the poDTest Rust CLI tool
+description: Run Docker web app container tests using the poDTest Rust CLI tool
 author: h4nz0x
 branding:
   icon: activity
