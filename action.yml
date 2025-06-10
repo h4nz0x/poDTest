@@ -1,0 +1,44 @@
+name: poDTest Action
+author: h4nz0x
+description: Run poDTest to build, test, and clean up a Docker web app container
+inputs:
+  dockerfile-path:
+    description: Path to the Dockerfile
+    required: true
+    default: ./deployments/Dockerfile
+  port:
+    description: Port to expose
+    required: true
+    default: "8000"
+  health-check-path:
+    description: Health check endpoint path
+    required: true
+    default: /health
+  health-check-timeout:
+    description: Timeout for health check in seconds
+    required: true
+    default: "10"
+  health-check-interval:
+    description: Number of health check attempts
+    required: true
+    default: "5"
+  build-timeout:
+    description: Timeout for image build in seconds
+    required: true
+    default: "300"
+  hot-fix:
+    description: Enable hot-fix mode (true/false)
+    required: true
+    default: "false"
+runs:
+  using: docker
+  image: Dockerfile
+  env:
+    DOCKERFILE_PATH: ${{ inputs.dockerfile-path }}
+    PORT: ${{ inputs.port }}
+    HEALTH_CHECK_PATH: ${{ inputs.health-check-path }}
+    HEALTH_CHECK_TIMEOUT: ${{ inputs.health-check-timeout }}
+    HEALTH_CHECK_INTERVAL: ${{ inputs.health-check-interval }}
+    BUILD_TIMEOUT: ${{ inputs.build-timeout }}
+    HOT_FIX: ${{ inputs.hot-fix }}
+  entrypoint: /entrypoint.sh
