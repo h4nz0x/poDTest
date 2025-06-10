@@ -2,8 +2,8 @@ name: poDTest
 description: Run Docker container tests using the poDTest Rust CLI tool
 author: h4nz0x
 branding:
-  icon: anchor
-  color: purple
+  icon: activity
+  color: yellow
 inputs:
   dockerfile-path:
     description: Path to the Dockerfile
