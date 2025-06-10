@@ -36,7 +36,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Run poDTest
-        uses: h4nz0x/poDTest@v1
+        uses: h4nz0x/poDTest@v3
         with:
           dockerfile-path: ./deployments
           port: 8000
@@ -65,7 +65,7 @@ To skip execution (e.g., for GitHub Actions without Docker):
 
 ```yaml
 - name: Run poDTest with Hot-Fix
-  uses: h4nz0x/poDTest@v1
+  uses: h4nz0x/poDTest@v3
   with:
     hot-fix: true
 ```
