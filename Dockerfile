@@ -1,6 +1,5 @@
-FROM debian:bullseye-slim
+FROM ubuntu:22.04
 
-# Install OpenSSL for dynamic binary (skip if using musl)
 RUN apt-get update && apt-get install -y libssl3 && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
