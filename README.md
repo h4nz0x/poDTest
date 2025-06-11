@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.1.0
+        uses: actions/checkout@v4.1.2
       - name: Run poDTest
         uses: h4nz0x/poDTest@v4
         with:
@@ -65,7 +65,7 @@ To skip execution (e.g., for GitHub Actions without Docker):
 
 ```yaml
 - name: Run poDTest with Hot-Fix
-  uses: h4nz0x/poDTest@v4.1,0
+  uses: h4nz0x/poDTest@v4.1.2
   with:
     hot-fix: true
 ```
