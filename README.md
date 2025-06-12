@@ -57,7 +57,7 @@ jobs:
 | `health-check-timeout` | Timeout for health check in seconds | No | `10` |
 | `health-check-interval` | Number of health check attempts | No | `5` |
 | `build-timeout` | Timeout for image build in seconds | No | `300` |
-| `hot-fix` | Enable hot-fix mode (true/false) | No | `""` |
+| `hot-fix` | Enable hot-fix mode (true/false) | No | `false` |
 
 ## Example with Hot-Fix
 
