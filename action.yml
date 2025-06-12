@@ -1,5 +1,5 @@
-name: poDTest Action
-description: Run poDTest to build and test Docker containers
+name: poDTester
+description: Run poDTest to build and test Docker web app containers
 author: h4nz0x
 branding:
   color: yellow
