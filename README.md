@@ -1,6 +1,6 @@
 # poDTest
 
-A GitHub Action to run Docker container tests using the `poDTest` Rust CLI tool. This action builds, tests, and cleans up a Docker web app container based on a specified Dockerfile, with support for health checks and hot-fix mode for GitHub Actions integration.
+A GitHub Action to run Docker container tests using the `poDTest` Rust CLI tool. This action builds, tests, and cleans up a Docker web app container based on a specified Dockerfile, with support for health checks and hot-fix mode for GitHub Actions integration. This works for web applications for now (backend and frontend).
 
 ## Features
 
@@ -38,7 +38,7 @@ jobs:
       - name: Run poDTest
         uses: h4nz0x/poDTest@v1
         with:
-          dockerfile-path: ./deployments
+          dockerfile-path: ./Dockerfile or <path to dockerfile>
           port: 8000
           health-check-path: /health
           health-check-timeout: 10
@@ -51,9 +51,9 @@ jobs:
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `dockerfile-path` | Path to the Dockerfile | No | `./deployments` |
-| `port` | Internal port to expose | No | `8000` |
-| `health-check-path` | Health check endpoint path | No | `/health` |
+| `dockerfile-path` | Path to the Dockerfile | Yes | `./<path to dockerfile>` |
+| `port` | Internal port to expose | Yes | `8000` |
+| `health-check-path` | Health check endpoint path | Yes | `/health` |
 | `health-check-timeout` | Timeout for health check in seconds | No | `10` |
 | `health-check-interval` | Number of health check attempts | No | `5` |
 | `build-timeout` | Timeout for image build in seconds | No | `300` |
