@@ -1,5 +1,9 @@
 name: poDTest Action
 description: Run poDTest to build and test Docker containers
+author: h4nz0x
+branding:
+  color: yellow
+  icon: activity
 inputs:
   dockerfile-path:
     description: Path to the Dockerfile
