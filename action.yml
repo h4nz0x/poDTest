@@ -1,47 +1,50 @@
 name: poDTest Action
-description: Run poDTest to build, test, and clean up a Docker container
-author: h4nz0x
-branding:
-  icon: activity
-  color: yellow
+description: Run poDTest to build and test Docker containers
 inputs:
   dockerfile-path:
     description: Path to the Dockerfile
-    required: false
-    default: ./deployments/Dockerfile
+    required: true
   port:
-    description: Internal port to expose
-    required: false
-    default: "8000"
+    description: Port to expose
+    required: true
   health-check-path:
     description: Health check endpoint path
-    required: false
-    default: /health
+    required: true
   health-check-timeout:
-    description: Timeout for health check in seconds
+    description: Health check timeout in seconds
     required: false
-    default: "10"
+    default: '10'
   health-check-interval:
-    description: Number of health check attempts
+    description: Health check interval in seconds
     required: false
-    default: "5"
+    default: '5'
   build-timeout:
-    description: Timeout for image build in seconds
+    description: Build timeout in seconds
     required: false
-    default: "300"
+    default: '300'
   hot-fix:
-    description: Enable hot-fix mode (true/false)
+    description: Enable hot-fix mode
     required: false
-    default: ""
+    default: 'false'
 runs:
-  using: docker
-  image: Dockerfile
-  env:
-    INPUT_DOCKERFILE_PATH: ${{ inputs.dockerfile-path }}
-    INPUT_PORT: ${{ inputs.port }}
-    INPUT_HEALTH_CHECK_PATH: ${{ inputs.health-check-path }}
-    INPUT_HEALTH_CHECK_TIMEOUT: ${{ inputs.health-check-timeout }}
-    INPUT_HEALTH_CHECK_INTERVAL: ${{ inputs.health-check-interval }}
-    INPUT_BUILD_TIMEOUT: ${{ inputs.build-timeout }}
-    INPUT_HOT_FIX: ${{ inputs.hot-fix }}
-  entrypoint: /entrypoint.sh
+  using: composite
+  steps:
+    - name: Setup poDTest Binary
+      shell: bash
+      run: |
+        mkdir -p /tmp/podtest
+        cp ${{ github.action_path }}/poDTest /tmp/podtest/poDTest
+        chmod +x /tmp/podtest/poDTest
+    - name: Run poDTest
+      shell: bash
+      run: |
+        /tmp/podtest/poDTest \
+          --dockerfile-path "${{ inputs.dockerfile-path }}" \
+          --port ${{ inputs.port }} \
+          --health-check-path "${{ inputs.health-check-path }}" \
+          --health-check-timeout ${{ inputs.health-check-timeout }} \
+          --health-check-interval ${{ inputs.health-check-interval }} \
+          --build-timeout ${{ inputs.build-timeout }} \
+          --hot-fix ${{ inputs.hot-fix }}
+      env:
+        DOCKER_HOST: unix:///var/run/docker.sock
